@@ -139,7 +139,7 @@ if uploaded_files:
             metric = extract_chart_title(query) 
 
             # Use regex to find all numeric values in the result
-            data_matches = [int(re.sub(r'[\$,\.]', '', x)) for x in result.split('was')[1].replace('and', '').split()]
+            data_matches = [int(re.sub(r'[\$,\.:]', '', x)) for x in result.split('was')[1].replace('and', '').split()]
 
                         # Extracting years from original document
             years = []
