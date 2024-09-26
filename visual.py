@@ -47,7 +47,7 @@ def split_documents(documents, chunk_size=1000, chunk_overlap=200):
 # Function to create vector index from documents
 def create_vector_index(docs):
     """Create FAISS vector index from documents"""
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(api_key=api_key)
     return FAISS.from_documents(docs, embeddings)
 
 # Function to run query on the documents
