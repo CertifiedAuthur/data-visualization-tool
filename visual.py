@@ -11,14 +11,6 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.vectorstores import VectorStoreRetriever
 import re
-import os
-
-# Load OpenAI API key from environment variable
-def load_openai_api_key():
-    try:
-        return os.environ['OPENAI_API_KEY']
-    except KeyError:
-        return st.sidebar.text_input("Enter your OpenAI API key:", type="password")
 
 # Initialize LLM with required parameters
 def initialize_llm(api_key):
@@ -108,8 +100,11 @@ st.title("Business Data Visualization Tool")
 st.write("Upload multiple Excel files to query data and visualize it.")
 
 # Load OpenAI API key
-api_key = load_openai_api_key()
-llm = initialize_llm(api_key)
+api_key = st.sidebar.text_input("Enter your OpenAI API key:", type="password")
+
+# Initialize LLM only if API key is provided
+if api_key:
+    llm = initialize_llm(api_key)
 
 # File uploader for multiple Excel files
 uploaded_files = st.file_uploader("Choose Excel files", type="xlsx", accept_multiple_files=True)
