@@ -15,7 +15,7 @@ import re
 # Function to initialize LLM with the provided OpenAI API key
 def initialize_llm(api_key):
     openai.api_key = api_key  # Set the OpenAI API key globally
-    return OpenAI(openai_api_key=api_key, temperature=0.7, max_tokens=500)
+    return OpenAI(openai_api_key=api_key, temperature=0.9, max_tokens=500)
 
 # Function to load Excel files
 def load_excel_file(file):
