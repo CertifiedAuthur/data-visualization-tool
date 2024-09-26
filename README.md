@@ -27,40 +27,52 @@ LangChain
 OpenAI API
 FAISS (langchain-community module for FAISS integration)
 Matplotlib
-Installation Steps
-Clone the Repository:
+
+##### Installation Steps
+
+###### Clone the Repository:
 
 bash
-Copy code
+```
 git clone https://github.com/CertifiedAuthur/economic-data-visualization.git
 cd economic-data-visualization
-Create a Virtual Environment:
+```
+
+###### Create a Virtual Environment:
 
 bash
-Copy code
+```
 python -m venv venv
-Activate the Virtual Environment:
+```
 
-On Windows:
+###### Activate the Virtual Environment:
+
+###### On Windows:
 
 bash
-Copy code
+```
 venv\Scripts\activate
-On macOS/Linux:
+```
+
+###### On macOS/Linux:
 
 bash
-Copy code
+```
 source venv/bin/activate
-Install the Required Packages:
+```
 
-Install the dependencies specified in requirements.txt:
+##### Install the Required Packages:
+
+###### Install the dependencies specified in requirements.txt:
 
 bash
-Copy code
+```
 pip install -r requirements.txt
-requirements.txt:
+```
 
-Copy code
+##### requirements.txt:
+
+```
 streamlit 
 pandas 
 faiss-cpu 
@@ -70,29 +82,36 @@ langchain_openai
 langchain_community
 openpyxl
 plotly
-Set Up the Environment Variables:
+```
+
+##### Set Up the Environment Variables:
 
 Create a .env file in the root directory and add the following keys:
 
 env
-Copy code
+```
 OPENAI_API_KEY=your_openai_api_key
-Run the Application:
+```
+
+##### Run the Application:
 
 bash
-Copy code
+```
 streamlit run visual.py
+```
+
 Open your web browser and go to http://localhost:8501 to access the application.
 
 ##### File Structure
 bash
-Copy code
+```
 ├── README.md
 ├── requirements.txt
 ├── visual.py                # Main application script
 ├── data
 │   └── economic_data.csv    # Sample economic dataset
 └── venv                     # Virtual environment
+```
 
 ##### Usage
 Run the application by executing streamlit run visual.py.
