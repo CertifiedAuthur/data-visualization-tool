@@ -15,7 +15,7 @@ import re
 # Function to initialize LLM with the provided OpenAI API key
 def initialize_llm(api_key):
     openai.api_key = api_key  # Set the OpenAI API key globally
-    return OpenAI(openai_api_key=api_key, temperature=0.9, max_tokens=500)
+    return OpenAI(openai_api_key=api_key, temperature=0.7, max_tokens=300)
 
 # Function to load Excel files
 def load_excel_file(file):
@@ -50,11 +50,25 @@ def create_vector_index(docs):
     embeddings = OpenAIEmbeddings(api_key=api_key)
     return FAISS.from_documents(docs, embeddings)
 
-# Function to run query on the documents
+# Function to run query on the documents using a PromptTemplate
 def run_qa_chain(query, vectorindex, llm):
-    """Run Retrieval QA chain on the documents"""
+    """Run Retrieval QA chain on the documents using PromptTemplate"""
+    prompt_template = """
+    You are a financial data expert. Answer the following question based only on the given documents. 
+    If the information is not present or is ambiguous, respond with "I don't know". 
+    Do not infer or assume. Adhere strictly to the data provided.
+
+    Query: {query}
+    
+    Document Information:
+    {context}
+    
+    Your response:
+    """
+    template = PromptTemplate(template=prompt_template, input_variables=["query", "context"])
+
     retriever = vectorindex.as_retriever()
-    chain = RetrievalQA.from_llm(llm=llm, retriever=retriever)
+    chain = RetrievalQA.from_llm(llm=llm, retriever=retriever, prompt_template=template)
     qa_results = chain({"query": query})
     return qa_results
 
@@ -73,28 +87,6 @@ def extract_chart_title(query):
     except AttributeError:
         return "Unable to extract chart title"
 
-prompt ="""
-Provide precise and accurate answers based solely on the information explicitly stated in the financial documents. Ensure 100% accuracy, with no assumptions or inferences.
-Critical Guidelines:
-1. Comprehensive Review: Exhaustively analyze the entire document to ensure all relevant data points are considered.
-2. Absolute Accuracy: Only provide information explicitly stated in the documents; respond with "I don't know" if uncertain or ambiguous.
-3. Latest Data Priority: Always utilize the most recent financial data available.
-4. Context Validation: Verify answers directly against document content.
-5. No Assumptions: Refrain from assuming or providing unsubstantiated information.
-6. Cross-Referencing: Confirm every data point's accuracy through cross-referencing.
-7. Clarity: Request clarification if documents lack sufficient detail or are ambiguous.
-Response Format:
-1. Answer the question directly and concisely.
-2. Provide relevant context and supporting data.
-3. Clearly indicate if information is unavailable or unclear.
-Additional Considerations:
-1. Be aware of document structure (e.g., tables, sections) to improve navigation.
-2. Maintain consistent formatting and units (e.g., currency, percentages).
-3. Prioritize accuracy over providing an answer.
-Example Question Prefix:
-"To ensure accuracy, please answer based solely on the provided financial documents. If unsure or lacking information, respond with 'I don't know'.
-"""
-
 # Streamlit UI
 st.title("Business Data Visualization Tool")
 st.write("Upload multiple Excel files to query data and visualize it.")
@@ -112,7 +104,7 @@ uploaded_files = st.file_uploader("Choose Excel files", type="xlsx", accept_mult
 if uploaded_files:
     all_dataframes = {}
     sheet_names = []
-    
+
     # Process each uploaded Excel file
     for uploaded_file in uploaded_files:
         sheets_dict = load_excel_file(uploaded_file)
@@ -123,7 +115,7 @@ if uploaded_files:
 
     docs = split_documents(documents)
     vectorindex_openai = create_vector_index(docs)
-    
+
     # User query input
     query = st.text_input("Enter your query (e.g., 'Show me revenue for Company XYZ'): ")
 
@@ -136,12 +128,12 @@ if uploaded_files:
             result = qa_results['result']
 
             # Adjust metric extraction to be more robust
-            metric = extract_chart_title(query) 
+            metric = extract_chart_title(query)
 
             # Use regex to find all numeric values in the result
             data_matches = [int(re.sub(r'[\$,\.:]', '', x)) for x in result.split('was')[1].replace('and', '').split()]
 
-                        # Extracting years from original document
+            # Extracting years from original document
             years = []
             for doc in documents:
                 if 'Date' in doc.page_content:
