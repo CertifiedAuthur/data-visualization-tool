@@ -12,10 +12,10 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.vectorstores import VectorStoreRetriever
 import re
 
-# Initialize LLM with required parameters
+# Function to initialize LLM with the provided OpenAI API key
 def initialize_llm(api_key):
-    openai.api_key = api_key
-    return OpenAI(temperature=0.7, max_tokens=500)
+    openai.api_key = api_key  # Set the OpenAI API key globally
+    return OpenAI(openai_api_key=api_key, temperature=0.7, max_tokens=500)
 
 # Function to load Excel files
 def load_excel_file(file):
