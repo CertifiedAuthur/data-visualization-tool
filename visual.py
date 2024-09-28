@@ -77,10 +77,6 @@ prompt ="""
 You are a financial data expert. Answer the following question based only on the given documents. 
     If the information is not present or is ambiguous, respond with "I don't know". 
     Do not infer or assume. Adhere strictly to the data provided.
-    Ensure the following:
-        - Respond only with data explicitly stated in the documents.
-        - Avoid making assumptions or inferences.
-        - Prioritize the most recent data if multiple entries exist.
 """
 
 # Streamlit UI
