@@ -150,6 +150,13 @@ if uploaded_files:
                     st.warning(f"Invalid result format for visualization: {e}")
                     data_matches = []
 
+            # Extracting years from original document
+            years = []
+            for doc in documents:
+                if 'Date' in doc.page_content:
+                    dates = doc.page_content.split(', ')[1:]  # Extract dates
+                    years = [date.split('-')[0] for date in dates]  # Extract years
+
             # Ensure we only take the last 'n' years that correspond to the data
             if len(years) > len(data_matches):
                 years = years[:len(data_matches)]
