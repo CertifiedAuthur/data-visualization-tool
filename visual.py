@@ -130,12 +130,25 @@ if uploaded_files:
             except IndexError:
                 print("Invalid result format")
 
-            # Extracting years from original document
-            years = []
-            for doc in documents:
-                if 'Date' in doc.page_content:
-                    dates = doc.page_content.split(', ')[1:]  # Extract dates
-                    years = [date.split('-')[0] for date in dates]  # Extract years
+           data_matches = []
+            if re.search(r'(\d+,\d+|\d{9,})', result):
+                try:
+                    # Safely split the result and check the number of elements
+                    result_split = result.split('was')
+                    if len(result_split) > 1:
+                        # Extract multiple numeric values from the result
+                        data_matches = [
+                            int(re.sub(r'[\$,\.:]', '', x))
+                            for x in result_split[1].replace('and', '').split()
+                            if re.sub(r'[\$,\.:]', '', x) != '' and re.sub(r'[\$,\.:]', '', x).isdigit()
+                        ]
+                    else:
+                        # st.warning("Unable to extract numeric data for visualization. Displaying result as text.")
+                        data_matches = []
+
+                except (IndexError, ValueError) as e:
+                    st.warning(f"Invalid result format for visualization: {e}")
+                    data_matches = []
 
             # Ensure we only take the last 'n' years that correspond to the data
             if len(years) > len(data_matches):
