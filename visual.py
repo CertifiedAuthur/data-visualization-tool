@@ -6,16 +6,14 @@ from langchain_openai import OpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA
 from langchain.schema import Document
-from langchain.prompts import PromptTemplate
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_core.vectorstores import VectorStoreRetriever
 import re
 
 # Function to initialize LLM with the provided OpenAI API key
 def initialize_llm(api_key):
     openai.api_key = api_key  # Set the OpenAI API key globally
-    return OpenAI(openai_api_key=api_key, temperature=0.9, max_tokens=500)
+    return OpenAI(openai_api_key=api_key, temperature=0.5, max_tokens=1000)
 
 # Function to load Excel files
 def load_excel_file(file):
@@ -45,7 +43,7 @@ def split_documents(documents, chunk_size=1000, chunk_overlap=200):
     return text_splitter.split_documents(documents)
 
 # Function to create vector index from documents
-def create_vector_index(docs):
+def create_vector_index(docs, api_key):
     """Create FAISS vector index from documents"""
     embeddings = OpenAIEmbeddings(api_key=api_key)
     return FAISS.from_documents(docs, embeddings)
@@ -72,11 +70,13 @@ def extract_chart_title(query):
         return chart_title
     except AttributeError:
         return "Unable to extract chart title"
-
+    
 prompt ="""
-You are a financial data expert. Answer the following question based only on the given documents. 
-    If the information is not present or is ambiguous, respond with "I don't know". 
-    Do not infer or assume. Adhere strictly to the data provided.
+You are AnalytIQ, a conversational data visualization assistant for financial and business analysts. Excel files will be provided to you, some will be in a format that is complex, but you must thoroughly search through it and provide answer to every query asked. 
+Kindly make sure that your answer is 100% correct to what you have on the excel file especially when it comes to date and figures, do not misplace either of them, this is really important. please skip missing values, make sure to thoroughly go through the document meticulously and return the answer.
+Your job is to assist financial and business analysts by providing insights, generating visual representations, and answering queries using data from multiple projects. You help users extract information, create visualizations, and interact with complex business data using natural language queries in a seamless and intuitive manner.
+Return the results in a Sequential Numeric List Format. List all numeric values sequentially, separated by commas, and use 'and' before the last value.
+Remember you are AnalytIQ, a conversational data visualization assistant for financial and business analysts.
 """
 
 # Streamlit UI
@@ -96,7 +96,7 @@ uploaded_files = st.file_uploader("Choose Excel files", type="xlsx", accept_mult
 if uploaded_files:
     all_dataframes = {}
     sheet_names = []
-    
+
     # Process each uploaded Excel file
     for uploaded_file in uploaded_files:
         sheets_dict = load_excel_file(uploaded_file)
@@ -106,51 +106,42 @@ if uploaded_files:
             sheet_names.append(sheet_name)
 
     docs = split_documents(documents)
-    vectorindex_openai = create_vector_index(docs)
-    
+    vectorindex_openai = create_vector_index(docs, api_key)
+
     # User query input
     query = st.text_input("Enter your query (e.g., 'Show me revenue for Company XYZ'): ")
 
     if query:
         try:
             # Run the query and get the response
-            qa_results = run_qa_chain(query, vectorindex_openai, llm)
-
-            # Extract result from QA
+            qa_results = run_qa_chain(prompt + query, vectorindex_openai, llm)
             result = qa_results['result']
+            # print (result)
+            # st.write(f"Query Result: {result}")  # Display the raw result
 
-            # Adjust metric extraction to be more robust
-            metric = extract_chart_title(query) 
-
-            # Use regex to find all numeric values in the result
-            try:
-                data_matches = [int(re.sub(r'[\$,\.:]', '', x)) 
-                    for x in result.split('was')[1].replace('and', '').split() 
-                    if re.sub(r'[\$,\.:]', '', x) != '' and re.sub(r'[\$,\.:]', '', x).isdigit()]
-            except IndexError:
-                print("Invalid result format")
-                
+            # Check if the result is visualizable by searching for multiple numeric values
+            # Extract numeric values from the result
             data_matches = []
-            if re.search(r'(\d+,\d+|\d{9,})', result):
-                try:
-                    # Safely split the result and check the number of elements
-                    result_split = result.split('was')
-                    if len(result_split) > 1:
-                        # Extract multiple numeric values from the result
-                        data_matches = [
-                            int(re.sub(r'[\$,\.:]', '', x))
-                            for x in result_split[1].replace('and', '').split()
-                            if re.sub(r'[\$,\.:]', '', x) != '' and re.sub(r'[\$,\.:]', '', x).isdigit()
-                        ]
-                    else:
-                        # st.warning("Unable to extract numeric data for visualization. Displaying result as text.")
-                        data_matches = []
 
-                except (IndexError, ValueError) as e:
-                    st.warning(f"Invalid result format for visualization: {e}")
-                    data_matches = []
+            # Use regex to find all numeric values
+            found_numbers = re.findall(r'(\d{9,})', result)
 
-            # Extracting years from original document
+            # Convert found numbers to integers and add to data_matches
+            data_matches = [int(x) for x in found_numbers]
+
+            # Print the extracted data
+            if data_matches:
+                data_list = ', '.join(map(str, data_matches[:-1])) + ', and ' + str(data_matches[-1])
+                print(f"Extracted Revenue Data: {data_list}")  # Display extracted data
+            else:
+                print("No valid numeric data found.")
+
+
+            # If we successfully extract multiple data points, visualize
+            if len(data_matches) > 1:
+                st.success("Visualizing the results...")
+
+                # Extracting years from original document
             years = []
             for doc in documents:
                 if 'Date' in doc.page_content:
@@ -165,25 +156,24 @@ if uploaded_files:
             years = years[-len(data_matches):]  # Take the last n years
 
             # Sort data and years in descending order of revenue
-            sorted_data = sorted(zip(data_matches, years), reverse=True)
+            if data_matches:  # Ensure data_matches is not empty before processing
+                sorted_data = sorted(zip(data_matches, years), reverse=True)
 
-            # Separate data and years
-            data, years = zip(*sorted_data)
+                # Separate data and years
+                data, years = zip(*sorted_data)
 
-            # Create Plotly figure
-            fig = go.Figure(data=[go.Bar(x=years, y=data, 
-                                        hovertext=[f"{year}: {format(x, ',d')}" for x, year in zip(data, years)],
-                                        hoverinfo='text')])
 
-            # Customize layout
-            fig.update_layout(
-                title=f'{metric.capitalize()} Over Last {len(data)} Years',
-                xaxis_title='Year',
-                yaxis_title=f'{metric.capitalize()} (in billions)'
-            )
-
-            # Show Plotly figure
-            st.plotly_chart(fig, use_container_width=True)
+                # Create a Plotly figure
+                fig = go.Figure(data=[go.Bar(x=years, y=data_matches)])
+                fig.update_layout(
+                    title="Data Visualization",
+                    xaxis_title="Year",
+                    yaxis_title="Value"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.write("This data can't be visualized as a chart. Displaying as text:")
+                st.text(result)
 
         except Exception as e:
             st.error(f"Error processing query: {e}")
