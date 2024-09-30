@@ -123,7 +123,7 @@ if uploaded_files:
             metric = extract_chart_title(query) 
 
             # Initialize `data_matches` as an empty list to handle potential errors gracefully
-                data_matches = []
+            data_matches = []
 
             # Use regex to find all numeric values in the result
             try:
