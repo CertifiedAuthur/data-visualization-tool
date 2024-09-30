@@ -129,8 +129,8 @@ if uploaded_files:
                     if re.sub(r'[\$,\.:]', '', x) != '' and re.sub(r'[\$,\.:]', '', x).isdigit()]
             except IndexError:
                 print("Invalid result format")
-
-           data_matches = []
+                
+            data_matches = []
             if re.search(r'(\d+,\d+|\d{9,})', result):
                 try:
                     # Safely split the result and check the number of elements
